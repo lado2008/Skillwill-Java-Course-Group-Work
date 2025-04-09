@@ -1,77 +1,109 @@
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.time.format.DateTimeFormatter;
 
-
 public class Main {
     private static Scanner scanner = new Scanner(System.in);
-    private static String username;
+    private static String username = "";
     private static Map<String, Task> tasks = new HashMap<>();
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     public static void main(String[] args) {
+        while (username.isEmpty()){
+            System.out.println("Enter your username: ");
+            username = scanner.nextLine();
+        }
 
-        System.out.println("Enter your username: ");
-        username = scanner.nextLine();
-
+        label:
         while (true) {
-            System.out.println("Commands: 1. - add, 2. - list, 3. - update, 4. - delete, 5. - get, 6. - exit");
+            System.out.println("Commands:\n 1. - Add Task,\n 2. - List All Task,\n 3. - Update Task,\n 4. - Delete Task,\n 5. - Get Specific Task,\n 6. - Exit");
             System.out.print("Enter command 1, 2, 3, 4, 5 or 6: ");
             String input = scanner.nextLine();
 
-            if (input.equals("1")) {
-                addTask();
-            } else if (input.equals("2")) {
-                listTasks();
-            } else if (input.equals("3")) {
-                updateTask();
-            } else if (input.equals("4")) {
-                deleteTask();
-            } else if (input.equals("5")) {
-                getTaskDetails();
-            } else if (input.equals("6")) {
-                System.out.println("Goodbye!");
-                break;
-            } else {
-                System.out.println("Unknown command.");
+            switch (input) {
+                case "1":
+                    addTask();
+                    break;
+                case "2":
+                    listTasks();
+                    break;
+                case "3":
+                    updateTask();
+                    break;
+                case "4":
+                    deleteTask();
+                    break;
+                case "5":
+                    getTaskDetails();
+                    break;
+                case "6":
+                    System.out.println("Goodbye!");
+                    break label;
+                default:
+                    System.out.println("Unknown command.");
+                    break;
             }
         }
     }
     public static void addTask() {
-            System.out.println("Enter task type ( 1. - basic, 2. - limited, 3. - repeatable): ");
-            String type = scanner.nextLine();
+        System.out.println("Enter task type ( 1. - basic, 2. - limited, 3. - repeatable): ");
+        String type = scanner.nextLine();
 
+        System.out.println("Task Name: ");
+        String taskName = scanner.nextLine();
+
+        while (taskName.isEmpty()) {
             System.out.println("Task Name: ");
-            String taskName = scanner.nextLine();
+            taskName = scanner.nextLine();
+        }
 
-            while (taskName.isEmpty()) {
-                System.out.println("Task Name: ");
-                taskName = scanner.nextLine();
+        if (tasks.containsKey(taskName)) {
+            System.out.println("Task with this name already exists!");
+            return;
+        }
+
+        System.out.println("Task Description: ");
+        String taskDesc = scanner.nextLine();
+
+        if (type.equals("1")) {
+            tasks.put(taskName, new BasiceTask(taskName, taskDesc, username));
+        } else if (type.equals("2")) {
+            boolean repeat = true;
+
+            while (repeat) {
+                try {
+                    System.out.println("Deadline (YYYY-MM-DD HH:MM): ");
+                    LocalDateTime deadline = LocalDateTime.parse(scanner.nextLine(), formatter);
+                    tasks.put(taskName, new TimeLimitedTask(taskName, taskDesc, username, deadline));
+                    repeat = false;
+                } catch (DateTimeParseException e) {
+                    System.out.println("Invalid Input Detected!");
+                    repeat = true;
+                }
             }
-
-            if (tasks.containsKey(taskName)) {
-                System.out.println("Task with this name already exists!");
-                return;
+        } else if (type.equals("3")) {
+            boolean repeat = true;
+            while (repeat) {
+                try {
+                    System.out.println("How Many Times Should We Repeat Task?: ");
+                    int repeatCount = Integer.parseInt(scanner.nextLine());
+                    System.out.println("Repeated Task's Due Date (YYYY-MM-DD HH:MM): ");
+                    LocalDateTime repeatTime = LocalDateTime.parse(scanner.nextLine(), formatter);
+                    tasks.put(taskName, new RepeatableTask(taskName, taskDesc, username, repeatTime, repeatCount));
+                    repeat = false;
+                } catch (DateTimeParseException | NumberFormatException e) {
+                    if (e instanceof DateTimeParseException){
+                        System.out.println("Invalid Date Format! Restarting...");
+                    } else {
+                        System.out.println("Invalid Input Type! Restarting...");
+                    }
+                    repeat = true;
+                }
             }
-
-            System.out.println("Task Description: ");
-            String taskDesc = scanner.nextLine();
-
-            if (type.equals("1")) {
-                tasks.put(taskName, new BasiceTask(taskName, taskDesc, username));
-            } else if (type.equals("2")) {
-                System.out.println("Deadline (YYYY-MM-DD HH:MM): ");
-                LocalDateTime deadline = LocalDateTime.parse(scanner.nextLine(), formatter);
-                tasks.put(taskName, new TimeLimitedTask(taskName, taskDesc, username, deadline));
-            } else if (type.equals("3")) {
-                System.out.println("Repeat Task: ");
-                int repeatCount = Integer.parseInt(scanner.nextLine());
-                System.out.println("Repeat Time (YYYY-MM-DD HH:MM): ");
-                LocalDateTime repeatTime = LocalDateTime.parse(scanner.nextLine(), formatter);
-                tasks.put(taskName, new RepeatableTask(taskName, taskDesc, username, repeatTime, repeatCount));
-            } else {
-                System.out.println("This type of task doesn't exists!");
-            }
+        } else {
+            System.out.println("Invalid Task Type!");
+        }
     }
     public static void listTasks() {
         if (tasks.isEmpty()) {
@@ -119,5 +151,4 @@ public class Main {
             System.out.println("Task Not Found!");
         }
     }
-
 }
